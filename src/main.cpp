@@ -1,19 +1,6 @@
-/// @file    FirstLight.ino
-/// @brief   Animate a white dot moving along a strip of LEDs
-/// @example FirstLight.ino
+//slateDate
 
-// Use if you want to force the software SPI subsystem to be used for some reason (generally, you don't)
-// #define FASTLED_FORCE_SOFTWARE_SPI
-// Use if you want to force non-accelerated pin access (hint: you really don't, it breaks lots of things)
-// #define FASTLED_FORCE_SOFTWARE_SPI
-// #define FASTLED_FORCE_SOFTWARE_PINS
 #include <FastLED.h>
-
-///////////////////////////////////////////////////////////////////////////////////////////
-//
-// Move a white dot along the strip of leds.  This program simply shows how to configure the leds,
-// and then how to turn a single pixel white and then off, moving down the line of pixels.
-// 
 
 #define NUM_LEDS 16
 
@@ -43,21 +30,19 @@ int i = 0;
 // This function sets up the ledsand tells the controller about them
 void setup() {
 	// sanity check delay - allows reprogramming if accidently blowing power w/leds
-   	delay(500);
-    
-    
-
-  FastLED.addLeds<WS2812, DATA_PIN, RGB>(leds, NUM_LEDS);  // GRB ordering is typical
+  delay(500);
+  //add leds and set brightness
+  FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);  // GRB ordering is typical
   FastLED.setBrightness(BRIGHTNESS);  
-  Serial.begin(9600);
 
+  //start Serial for debugging
+  Serial.begin(9600);
 
   //set all leds blue, this will be the "background"
   for(int x = 0; x < NUM_LEDS; x++) {
       // set all leds to blue
       leds[x] = CRGB::Blue;
    }
-
    FastLED.show();
 }
 
@@ -66,8 +51,6 @@ void loop() {
 
   //distance from objective
   //distance == 10;
-
-  
   
   Serial.println(y);
   Serial.println(i);
@@ -96,33 +79,29 @@ void loop() {
     //send the one led around at speed 6
   }
 
-   // Move a single white led 
-   for(int whiteLed = 0; whiteLed < NUM_LEDS; whiteLed = whiteLed + 1) {
-      // Turn our current led on to white, then show the leds
-      leds[whiteLed] = CRGB::White;
-
-      // Show the leds (only one of which is set to white, from above)
+   // Move a single green led 
+   for(int greenLed = 0; greenLed < NUM_LEDS; greenLed++) {
+      // Turn our current led on to green, then show the leds
+      leds[greenLed] = CRGB::Green;
       FastLED.show();
 
       // Wait a little bit
       delay(speedz[i]);
 
       // Turn our current led back to blue for the next loop around
-      leds[whiteLed] = CRGB::Blue;
+      leds[greenLed] = CRGB::Blue;
    }
 
-  for(int whiteLed = 0; whiteLed < NUM_LEDS; whiteLed = whiteLed + 1) {
-      // Turn our current led on to white, then show the leds
-      leds[whiteLed] = CRGB::White;
-
-      // Show the leds (only one of which is set to white, from above)
+  for(int greenLed = 0; greenLed < NUM_LEDS; greenLed++) {
+      // Turn our current led on to green, then show the leds
+      leds[greenLed] = CRGB::Green;
       FastLED.show();
 
       // Wait a little bit
       delay(speedz[i]);
 
       // Turn our current led back to blue for the next loop around
-      leds[whiteLed] = CRGB::Blue;
+      leds[greenLed] = CRGB::Blue;
    }
 i ++;
    delay(200);
