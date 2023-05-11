@@ -135,13 +135,24 @@ i ++;
 
 #define NUM_LEDS 16
 
-#define DATA_PIN D3
+#define DATA_PIN 4
 
 #define BRIGHTNESS 5
 
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
 // Set to 'true' if you want to debug and listen to the raw GPS sentences
 #define GPSECHO true
+
+#define red 0
+#define green 1
+
+#define obj1LED 0
+#define obj2LED 4
+#define obj3LED 8
+#define obj4LED 12
+#define obj5LED 16
+
+
 
 // what's the name of the hardware serial port?
 //#define GPSSerial Serial1
@@ -192,6 +203,47 @@ float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
   return distance;
 }
 
+
+void searchingLED(){
+      for(int x = 0; x < NUM_LEDS; x++) {
+      // set all leds to blue
+      delay(100);
+      leds[x] = CRGB::Black;
+      FastLED.show();
+      }
+      for(int x = 0; x < NUM_LEDS; x++) {
+      // set all leds to blue
+      delay(100);
+      leds[x] = CRGB::Blue;
+      FastLED.show();
+      }      
+}
+
+void indicateObjective(int obj){
+ 
+  leds[obj] = CRGB::Blue;
+  //FastLED.show();
+}
+
+void indicateDistance(int dist){
+  Serial.println("into indicate distance func");
+  int ledzzz = map(dist, 5,200, 1,16);
+  ledzzz = 16 - ledzzz;
+  for (int x = 0; x < ledzzz; x++){
+    //light up the distance leds green
+    leds[x] = CRGB::Green;
+  }
+  //FastLED.show();
+}
+
+void grandFinale(){
+  //idk some kind of cool animation or sthng
+}
+
+//attach an interrupt in setup
+
+//insert isr here: buttonPressed++;
+
   //jeremy's place in decimal degrees 
   //43.66351364124962, -79.41824485327953
 
@@ -200,13 +252,40 @@ float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
   float lon1 = -79.41824485327953;
   float lat2 = 4030.750;
   float lon2 = -7515.125;
+  
+  float objlat0 = 43.7638617;
+  float objlon0 = -79.2992188;
+  float objlat1 = 43.7607578;
+  float objlon1 = -79.2942927;
+  float objlat2 = 43.7644854;
+  float objlon2 = -79.3090566;
+  float objlat3 = 43.757854;
+  float objlon3 = -79.3139465;
+  float objlat4 = 43.7529667;
+  float objlon4 = -79.3067171;
+  float objlat5 = 43.7603747;
+  float objlon5 = -79.3019936;
+
+  float objLatArray[] = {43.7638617, 43.7607578, 43.7644854, 43.757854, 43.7529667, 43.7603747};
+  float objLonArray[] = {-79.2992188, -79.2942927, -79.3090566, -79.3139465, -79.3067171, -79.3019936};
 
   float multiplier = 0.0000001000;
 
+  bool statusSet = 0;
+
+  float distance = 0;
+  int intDistance = 0;
+
+  int ledMover = 0;
+
+  int currentObj = 1;
+
+  int buttonPressed = 0;
+
+  int goodEnough = 15;
 
 void setup()
 {
-
   //**********led setup*****************//
 
   //add leds and set brightness
@@ -215,9 +294,11 @@ void setup()
   //set all leds blue, this will be the "background"
   for(int x = 0; x < NUM_LEDS; x++) {
       // set all leds to blue
+      delay(50);
       leds[x] = CRGB::Blue;
+      FastLED.show();
    }
-   FastLED.show();
+   
 
   //************end led setup************//
 
@@ -275,7 +356,7 @@ void loop() // run over and over again
   }
 
   // approximately every 2 seconds or so, print out the current stats
-  if (millis() - timer > 2000) {
+  if (millis() - timer > 700) {
     timer = millis(); // reset the timer
 
   /* comment out the time/date stuff
@@ -303,7 +384,7 @@ void loop() // run over and over again
     Serial.print("Fix: "); Serial.println((int)GPS.fix);
     //Serial.print(" quality: "); Serial.println((int)GPS.fixquality);
     if (GPS.fix) {
- Serial.print("Location: ");
+      Serial.print("Location: ");
       Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
       Serial.print(", ");
       Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
@@ -312,7 +393,26 @@ void loop() // run over and over again
       //Serial.print("Altitude: "); Serial.println(GPS.altitude);
       Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
       //Serial.print("Antenna status: "); Serial.println((int)GPS.antenna);
-    }
+      
+      FastLED.clear();
+      
+      if(distance < 500){
+      intDistance = (int)distance;
+      Serial.print("int to distance result");
+      Serial.println(intDistance);
+      indicateDistance(intDistance);
+      }
+      indicateObjective(obj1LED);
+      FastLED.show();
+    } else {
+      //run a lil animation while waiting for fix
+      if(ledMover == 17) ledMover = 0;
+      leds[ledMover] = CRGB::Purple;
+      leds[ledMover-1] = CRGB::Blue;
+      ledMover++;
+      FastLED.show();
+      
+      }
 
   // Convert GPS coordinates to decimal degrees
 
@@ -334,8 +434,26 @@ void loop() // run over and over again
   Serial.print(" , ");
   Serial.println(lon2, 7);
 
+
+
   // Calculate distance between the two GPS points
-  float distance = calculateDistance(lat1, lon1, lat2, lon2);
+  distance = calculateDistance(objLatArray[currentObj], objLonArray[currentObj], GPS.latitudeDegrees, GPS.latitudeDegrees);
+
+  //if you're within goodEnough check if you're on the last obj then finale, else on to the next one
+  if (distance < goodEnough) {
+    if(currentObj = 5) grandFinale();
+    else currentObj++;
+  }
+
+  //if the button is pressed 5 times, increment the obj and clear buttonPressed flag
+  if(buttonPressed == 5){ 
+    currentObj++;
+    buttonPressed = 0;
+  }
+
+  //if you try to go past 5 then do a wraparound https://www.youtube.com/watch?v=M4a8XQL3oZ0
+  if(currentObj == 6) currentObj = 0;
+
 
   Serial.print("Distance between the two points: ");
   Serial.print(distance, 5);  // Print distance with 2 decimal places
