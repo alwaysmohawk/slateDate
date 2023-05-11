@@ -227,12 +227,34 @@ void indicateObjective(int obj){
 
 void indicateDistance(int dist){
   Serial.println("into indicate distance func");
-  int ledzzz = map(dist, 5,200, 1,16);
-  ledzzz = 16 - ledzzz;
-  for (int x = 0; x < ledzzz; x++){
-    //light up the distance leds green
-    leds[x] = CRGB::Green;
-  }
+
+  //gotta get this doing like 2-4 loops. maybe from red orange yellow green? that would give me resolution of 800/16*4= 12.5m, that's not too bad i guess, that is a fair bit of walking though to see a pixel change, but probably workable 
+  int progressOutOf64 = map(dist, 20,1000, 1,64);
+  //progressOutOf64 = 64 - progressOutOf64;
+  //i think i wanna do like a modulus or something here, ya
+  int ledsToLightForDistance = progressOutOf64 % 16;
+
+  if(progressOutOf64 > 48){
+    for (int x = 0; x < ledsToLightForDistance; x++){
+      //light up the distance leds green
+      leds[x] = CRGB::Green;
+    }
+  } else if(progressOutOf64 <= 48 && progressOutOf64 > 32){
+    for (int x = 0; x < ledsToLightForDistance; x++){
+      //light up the distance leds yellow
+      leds[x] = CRGB::Yellow;
+    }
+  } else if(progressOutOf64 <= 32 && progressOutOf64 > 16){
+          for (int x = 0; x < ledsToLightForDistance; x++){
+          //light up the distance leds orange
+          leds[x] = CRGB::Orange;
+          }
+         } else if(progressOutOf64 <= 16){
+    for (int x = 0; x < ledsToLightForDistance; x++){
+      //light up the distance leds red
+      leds[x] = CRGB::Red;
+    }
+    }
   //FastLED.show();
 }
 
