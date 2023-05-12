@@ -10,9 +10,9 @@
 
 #define DATA_PIN 4
 
-#define BRIGHTNESS 5
+#define BRIGHTNESS 200
 
-#define maxBrightness 150
+#define maxBrightness 220
 #define minBrightness 5
 
 // Set GPSECHO to 'false' to turn off echoing the GPS data to the Serial console
@@ -78,8 +78,9 @@
   //convenience 151 43.666558417, -79.4195833
   //bloor and shaw 43.66245890, -79.42328144
   //harboard and crawford 43.65922697, -79.4207747
-  float objLatArray[] = {43.6636272, 43.666558417, 43.66245890, 43.65922697, 43.7603747};
-  float objLonArray[] = {-79.4172969, -79.4195833, -79.42328144, -79.4207747, -79.3019936};
+  //euclid and herric 43.66198487, -79.41385822
+  float objLatArray[] = {43.6636272, 43.666558417, 43.66245890, 43.65922697, 43.66198487};
+  float objLonArray[] = {-79.4172969, -79.4195833, -79.42328144, -79.4207747, -79.41385822};
 
 
   int objLedArray[] = {0, 4, 8, 12, 16};
@@ -111,6 +112,8 @@
 
 
   bool completionArray[] = {0, 0, 0, 0, 0};
+
+  int arrivalTimer = 60;
 
 // what's the name of the hardware serial port?
 //#define GPSSerial Serial1
@@ -179,6 +182,47 @@ void indicateCompleted(){
 
 void grandFinale(){
   //idk some kind of cool animation or sthng
+}
+
+void pride() 
+{
+  static uint16_t sPseudotime = 0;
+  static uint16_t sLastMillis = 0;
+  static uint16_t sHue16 = 0;
+ 
+  uint8_t sat8 = beatsin88( 87, 220, 250);
+  uint8_t brightdepth = beatsin88( 341, 96, 224);
+  uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
+  uint8_t msmultiplier = beatsin88(147, 23, 60);
+
+  uint16_t hue16 = sHue16;//gHue * 256;
+  uint16_t hueinc16 = beatsin88(113, 1, 3000);
+  
+  uint16_t ms = millis();
+  uint16_t deltams = ms - sLastMillis ;
+  sLastMillis  = ms;
+  sPseudotime += deltams * msmultiplier;
+  sHue16 += deltams * beatsin88( 400, 5,9);
+  uint16_t brightnesstheta16 = sPseudotime;
+  
+  for( uint16_t i = 0 ; i < NUM_LEDS; i++) {
+    hue16 += hueinc16;
+    uint8_t hue8 = hue16 / 256;
+
+    brightnesstheta16  += brightnessthetainc16;
+    uint16_t b16 = sin16( brightnesstheta16  ) + 32768;
+
+    uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
+    uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
+    bri8 += (255 - brightdepth);
+    
+    CRGB newcolor = CHSV( hue8, sat8, bri8);
+    
+    uint16_t pixelnumber = i;
+    pixelnumber = (NUM_LEDS-1) - pixelnumber;
+    
+    nblend( leds[pixelnumber], newcolor, 64);
+  }
 }
 
 int whichObj(){
@@ -304,12 +348,18 @@ void loop() // run over and over again
       
       if(currentObj < 5){
             if (distance <= 300 && distance > 150) closeness = far;
-            else if (distance <= 200 && distance > 100) closeness = close;
+            else if (distance <= 150 && distance > 100) closeness = close;
             else if (distance <= 100 && distance > 50) closeness = veryClose;
             else if (distance <50){
                     closeness = urThere;
                     completionArray[currentObj] = 1;
+                    arrivalTimer --;
+                    if(arrivalTimer <0){
+                      objLatArray[currentObj] = 0;
+                      objLonArray[currentObj] = 0;
+                      arrivalTimer = 60;
                     }
+                  }
         indicateObjective();
         indicateCompleted();
         if (brightness >= maxBrightness) upOrDown = upOrDown * -1;
@@ -317,10 +367,20 @@ void loop() // run over and over again
         brightness = brightness + (closeness * upOrDown);
         Serial.print("brightness: "); Serial.println(brightness);
         Serial.print("upOrDown: "); Serial.println(upOrDown);
-//        delay(closeness);
+        if(completionArray[0] == 1){
+          if(completionArray[1] == 1){
+            if(completionArray[2] == 1){
+              if(completionArray[3] == 1){
+                if(completionArray[4] == 1){
+                  pride();
+                }
+              }
+            }
+          }
+        }
         FastLED.setBrightness(abs(brightness));
         FastLED.show();
-      } //else FastLED.showColor(CRGB::Blue);
+      } 
       
       
 
@@ -362,3 +422,85 @@ void loop() // run over and over again
 
 }
 
+/*#include "FastLED.h"
+
+// Pride2015
+// Animated, ever-changing rainbows.
+// by Mark Kriegsman
+
+#if FASTLED_VERSION < 3001000
+#error "Requires FastLED 3.1 or later; check github for latest code."
+#endif
+
+#define DATA_PIN    3
+//#define CLK_PIN   4
+#define LED_TYPE    WS2811
+#define COLOR_ORDER GRB
+#define NUM_LEDS    200
+#define BRIGHTNESS  255
+
+CRGB leds[NUM_LEDS];
+
+
+void setup() {
+  delay(3000); // 3 second delay for recovery
+  
+  // tell FastLED about the LED strip configuration
+  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
+    .setCorrection(TypicalLEDStrip)
+    .setDither(BRIGHTNESS < 255);
+
+  // set master brightness control
+  FastLED.setBrightness(BRIGHTNESS);
+}
+
+
+void loop()
+{
+  pride();
+  FastLED.show();  
+}
+
+
+// This function draws rainbows with an ever-changing,
+// widely-varying set of parameters.
+void pride() 
+{
+  static uint16_t sPseudotime = 0;
+  static uint16_t sLastMillis = 0;
+  static uint16_t sHue16 = 0;
+ 
+  uint8_t sat8 = beatsin88( 87, 220, 250);
+  uint8_t brightdepth = beatsin88( 341, 96, 224);
+  uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
+  uint8_t msmultiplier = beatsin88(147, 23, 60);
+
+  uint16_t hue16 = sHue16;//gHue * 256;
+  uint16_t hueinc16 = beatsin88(113, 1, 3000);
+  
+  uint16_t ms = millis();
+  uint16_t deltams = ms - sLastMillis ;
+  sLastMillis  = ms;
+  sPseudotime += deltams * msmultiplier;
+  sHue16 += deltams * beatsin88( 400, 5,9);
+  uint16_t brightnesstheta16 = sPseudotime;
+  
+  for( uint16_t i = 0 ; i < NUM_LEDS; i++) {
+    hue16 += hueinc16;
+    uint8_t hue8 = hue16 / 256;
+
+    brightnesstheta16  += brightnessthetainc16;
+    uint16_t b16 = sin16( brightnesstheta16  ) + 32768;
+
+    uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
+    uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
+    bri8 += (255 - brightdepth);
+    
+    CRGB newcolor = CHSV( hue8, sat8, bri8);
+    
+    uint16_t pixelnumber = i;
+    pixelnumber = (NUM_LEDS-1) - pixelnumber;
+    
+    nblend( leds[pixelnumber], newcolor, 64);
+  }
+}*/
