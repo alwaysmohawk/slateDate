@@ -5,6 +5,7 @@
 #include <FastLED.h>
 
 #include <math.h>
+#include "objective.h"
 
 #define NUM_LEDS 16
 
@@ -22,68 +23,16 @@
 #define red 0
 #define green 1
 
-#define obj1LED 0
-#define obj2LED 4
-#define obj3LED 8
-#define obj4LED 12
-#define obj5LED 16
-
-// #define far 100 //150ms delay between brightness adjustments
-
-// #define close 75
-
-// #define veryClose 50
-
-// #define urThere 15
-
 //gonna try a different technique for closenesses
 #define far 2 //breathing brightness steps = .1 * 10
-
 #define close 5
-
 #define veryClose 10
-
 #define urThere 20
-
 #define noObj 30
+   
  
-  float lat1 = 43.66351364124962;
-  float lon1 = -79.41824485327953;
-  float lat2 = 4030.750;
-  float lon2 = -7515.125;
-  
-  float objlat0 = 43.7607578;
-  float objlon0 = -79.2942927;
-  float objlat1 = 43.7644854;
-  float objlon1 = -79.3090566;
-  float objlat2 = 43.757854;
-  float objlon2 = -79.3139465;
-  float objlat3 = 43.7529667;
-  float objlon3 = -79.3067171;
-  float objlat4 = 43.7603747;
-  float objlon4 = -79.3019936;
-
-  //these ones for the main event
-  //float objLatArray[] = {43.7607578, 43.7644854, 43.757854, 43.7529667, 43.7603747};
-  //float objLonArray[] = {-79.2942927, -79.3090566, -79.3139465, -79.3067171, -79.3019936};
-  
-  //these ones for testing
-  // jer's window 43.6635136, -79.4182448
-
-//this one is jer's place then the actual objs
-  // float objLatArray[] = {43.6635136, 43.7644854, 43.757854, 43.7529667, 43.7603747};
-  // float objLonArray[] = {-79.4182448, -79.3090566, -79.3139465, -79.3067171, -79.3019936};
-
-  //clintons 43.6636272, -79.4172969
-  //convenience 151 43.666558417, -79.4195833
-  //bloor and shaw 43.66245890, -79.42328144
-  //harboard and crawford 43.65922697, -79.4207747
-  //euclid and herric 43.66198487, -79.41385822
-  float objLatArray[] = {43.6636272, 43.666558417, 43.66245890, 43.65922697, 43.66198487};
-  float objLonArray[] = {-79.4172969, -79.4195833, -79.42328144, -79.4207747, -79.41385822};
 
 
-  int objLedArray[] = {0, 4, 8, 12, 16};
 
   bool statusSet = 0;
 
@@ -111,8 +60,6 @@
   int upOrDown = 1;
 
 
-  bool completionArray[] = {0, 0, 0, 0, 0};
-
   int arrivalTimer = 60;
 
 // what's the name of the hardware serial port?
@@ -131,32 +78,13 @@ CRGB leds[NUM_LEDS];
 
 
 // Function to convert ddmm.ssss to decimal degrees
-float convertToDecimal(float value) {
-  int degrees = int(value / 100);      // Extracting degrees
-  float minutes = value - degrees * 100;  // Extracting minutes
-  float decimalDegrees = degrees + (minutes / 60);  // Conversion to decimal degrees
-  return decimalDegrees;
-}
+// float convertToDecimal(float value) {
+//   int degrees = int(value / 100);      // Extracting degrees
+//   float minutes = value - degrees * 100;  // Extracting minutes
+//   float decimalDegrees = degrees + (minutes / 60);  // Conversion to decimal degrees
+//   return decimalDegrees;
+// }
 
-// Function to calculate distance between two GPS points
-float calculateDistance(float lat1, float lon1, float lat2, float lon2) {
-  const float EarthRadiusKm = 6371.0;  // Radius of the Earth in kilometers
-  const float MetersPerKm = 1000.0;    // Conversion factor from kilometers to meters
-
-  float lat1Rad = radians(lat1);
-  float lon1Rad = radians(lon1);
-  float lat2Rad = radians(lat2);
-  float lon2Rad = radians(lon2);
-
-  float dlat = lat2Rad - lat1Rad;  // Difference in latitude
-  float dlon = lon2Rad - lon1Rad;  // Difference in longitude
-
-  float a = pow(sin(dlat / 2), 2) + cos(lat1Rad) * cos(lat2Rad) * pow(sin(dlon / 2), 2);
-  float c = 2 * atan2(sqrt(a), sqrt(1 - a));
-  float distance = EarthRadiusKm * c * MetersPerKm;  // Calculating distance in meters
-
-  return distance;
-}
 
 void indicateObjective(){
   if(currentObj < 5){
@@ -180,9 +108,6 @@ void indicateCompleted(){
   }
 }
 
-void grandFinale(){
-  //idk some kind of cool animation or sthng
-}
 
 void pride() 
 {
@@ -272,7 +197,19 @@ void breathe(int closeness){
 
 void setup()
 {
-  //**********led setup*****************//
+  //**********led setup*****************/
+
+  Objective Objectives[5] = {
+    Objective(43.6636272, -79.4172969, 0),
+    Objective(43.666558417, -79.4195833, 4),
+    Objective(43.66245890, -79.42328144, 8),
+    Objective(43.65922697, -79.4207747, 12),
+    Objective(43.66198487, -79.41385822, 16),
+  };
+
+
+
+
 
   //add leds and set brightness
   FastLED.addLeds<WS2812, DATA_PIN, GRB>(leds, NUM_LEDS);  // GRB ordering is typical
@@ -323,7 +260,9 @@ void loop() // run over and over again
     if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
       return; // we can fail to parse a sentence in which case we should just wait for another
   }
-
+  
+  // lat2 = GPS.latitudeDegrees;
+  // lon2 = GPS.longitudeDegrees;
   // approximately every 700ms or so, print out the current stats
   if (millis() - timer > 50) {
     timer = millis(); // reset the timer
@@ -393,114 +332,9 @@ void loop() // run over and over again
       FastLED.show();
       }
   }
+
   // Convert GPS coordinates to decimal degrees
 
-  //lat2 = convertToDecimal(GPS.latitude);
-  //lon2 = convertToDecimal(GPS.longitude);
-  //lon2 = lon2 * -1.00000;
 
   //lat2 = GPS.latitude_fixed*multiplier;
-   lat2 = GPS.latitudeDegrees;
-  lon2 = GPS.longitudeDegrees;
-/*
-  Serial.print("lat1,lon1:");
-  Serial.print(lat1, 7);
-  Serial.print(" , ");
-  Serial.println(lon1, 7);
-
-  Serial.print("lat2,lon2:");
-  Serial.print(lat2, 7);
-  Serial.print(" , ");
-  Serial.println(lon2, 7);
-*/
-
-  //if you're within goodEnough check if you're on the last obj then finale, else on to the next one
-  // if (distance < goodEnough) {
-  //   if(currentObj == 5) grandFinale();
-  //   else currentObj++;
-  // }
-
-}
-
-/*#include "FastLED.h"
-
-// Pride2015
-// Animated, ever-changing rainbows.
-// by Mark Kriegsman
-
-#if FASTLED_VERSION < 3001000
-#error "Requires FastLED 3.1 or later; check github for latest code."
-#endif
-
-#define DATA_PIN    3
-//#define CLK_PIN   4
-#define LED_TYPE    WS2811
-#define COLOR_ORDER GRB
-#define NUM_LEDS    200
-#define BRIGHTNESS  255
-
-CRGB leds[NUM_LEDS];
-
-
-void setup() {
-  delay(3000); // 3 second delay for recovery
   
-  // tell FastLED about the LED strip configuration
-  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
-    .setCorrection(TypicalLEDStrip)
-    .setDither(BRIGHTNESS < 255);
-
-  // set master brightness control
-  FastLED.setBrightness(BRIGHTNESS);
-}
-
-
-void loop()
-{
-  pride();
-  FastLED.show();  
-}
-
-
-// This function draws rainbows with an ever-changing,
-// widely-varying set of parameters.
-void pride() 
-{
-  static uint16_t sPseudotime = 0;
-  static uint16_t sLastMillis = 0;
-  static uint16_t sHue16 = 0;
- 
-  uint8_t sat8 = beatsin88( 87, 220, 250);
-  uint8_t brightdepth = beatsin88( 341, 96, 224);
-  uint16_t brightnessthetainc16 = beatsin88( 203, (25 * 256), (40 * 256));
-  uint8_t msmultiplier = beatsin88(147, 23, 60);
-
-  uint16_t hue16 = sHue16;//gHue * 256;
-  uint16_t hueinc16 = beatsin88(113, 1, 3000);
-  
-  uint16_t ms = millis();
-  uint16_t deltams = ms - sLastMillis ;
-  sLastMillis  = ms;
-  sPseudotime += deltams * msmultiplier;
-  sHue16 += deltams * beatsin88( 400, 5,9);
-  uint16_t brightnesstheta16 = sPseudotime;
-  
-  for( uint16_t i = 0 ; i < NUM_LEDS; i++) {
-    hue16 += hueinc16;
-    uint8_t hue8 = hue16 / 256;
-
-    brightnesstheta16  += brightnessthetainc16;
-    uint16_t b16 = sin16( brightnesstheta16  ) + 32768;
-
-    uint16_t bri16 = (uint32_t)((uint32_t)b16 * (uint32_t)b16) / 65536;
-    uint8_t bri8 = (uint32_t)(((uint32_t)bri16) * brightdepth) / 65536;
-    bri8 += (255 - brightdepth);
-    
-    CRGB newcolor = CHSV( hue8, sat8, bri8);
-    
-    uint16_t pixelnumber = i;
-    pixelnumber = (NUM_LEDS-1) - pixelnumber;
-    
-    nblend( leds[pixelnumber], newcolor, 64);
-  }
-}*/
